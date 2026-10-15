@@ -1,2 +1,2 @@
-fast & smooth. i've been obsessed with this.
-probably works best on stable report rate tablets (wacom?).
+wip
+probably works best on stable, low report rate tablets (wacom?).
