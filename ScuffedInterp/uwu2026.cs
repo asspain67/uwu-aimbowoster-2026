@@ -44,6 +44,9 @@
  *    some thing
  *    .11
  *    fixed duplicate report detection
+ *    .12
+ *    re-enable enhanced prec
+ *    error pow changes (no more pow, multiply positive instead')
  */
 
 
@@ -56,17 +59,18 @@ using System.Numerics;
 
 namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLearning_6_10
 {
-    [PluginName("uwu aimbowoster 2026 6 test11")]
+    [PluginName("uwu aimbowoster 2026 6 test12")]
     public class Ee535 : AsyncPositionedPipelineElement<IDeviceReport>
     {
         public Ee535() : base()
         {
         }
 
-        [Property("pen button/tip compatibility fix"), DefaultPropertyValue(false), ToolTip
+        [Property("pen button fix"), DefaultPropertyValue(false), ToolTip
         (
-        "May fix weirdness when you press a button or tip touches tablet on some tablets\n" +
-        "Not all tablets have the problem\n"
+        "\n" +
+        "\n" +
+        "\n"
         )]
         public bool GetDoubleReportFix
         {
@@ -208,16 +212,16 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             set { _duplicate = value; }
         }
 
-        //[Property("a thing"), DefaultPropertyValue(false), ToolTip
-        //(
-        //"Try it, probably zero noticeable difference\n" +
-        //"\n"
-        //)]
-        //public bool GetEnhancePrecisionTest
-        //{
-        //    get { return _enhancedPrec; }
-        //    set { _enhancedPrec = value; }
-        //}
+        [Property("enhanced precision attempt"), DefaultPropertyValue(false), ToolTip
+        (
+        "Try it, probably zero noticeable difference\n" +
+        "\n"
+        )]
+        public bool GetEnhancePrecisionTest
+        {
+            get { return _enhancedPrec; }
+            set { _enhancedPrec = value; }
+        }
         private bool _enhancedPrec = false;
 
         //[Property("test training - custom training goal offset"), DefaultPropertyValue(1), ToolTip
@@ -370,13 +374,13 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             //float[] DampeningWeight = new float[_derivatives];
 
 
-            if (Time <= 1)
+            if (Time < 1f && Time > -1f)
                 for (int d = 1; d < _derivatives; d++)
                 {
                     TempVector += Time * _bestD[_t[0], d];
                     Time *= TimeMulti;
                 }
-            else if (Time > 1f) //Bubblegum fix for predicting more than 1 report ahead: will interpolate in a straight line continuing in the last prediction path direction
+            else if (true) //Time > 1f) //Bubblegum fix for predicting more than 1 report ahead: will interpolate in a straight line continuing in the last prediction path direction
                 for (int d = 1; d < _derivatives; d++)
                 {
                     TempVector += (1f + (Time - 1f) * d) * _bestD[_t[0], d];
@@ -447,7 +451,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
             //if ((_rawState[_t[1]] - _bestD[Present, 0]).Length() < (_rawState[Future] - _bestD[Present, 0]).Length())
             //    Future = _t[1];
-            
+
             float BaseFError = (_rawState[Future] - _rawState[Present]).Length();
             int FCategory = _fusedDDCat[Present];
 
@@ -464,8 +468,8 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                 //    Error *= -1f;
                 //}
                 //else'
-                if(Error > 1)
-                    Error = System.MathF.Pow(Error, POW);
+                if (Error > 0)
+                    Error = Error * POW;
 
                 _fWeightError[w, FCategory] = Error + 0.9999f * _fWeightError[w, FCategory];
 
@@ -475,7 +479,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                     _fCategoryStateWeight[_fusedDDCat[Present]] = w;
                 }
             }
-            
+
             //Future = _t[0];
 
             for (int d = 0; d < _derivatives; d++)
@@ -483,12 +487,12 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                 BestError = System.Single.MaxValue;
                 int BestWeight = _dCategoryStateWeight[_rawDDCat[Present, d], d];
 
-                if (d == 1)
-                {
-                    var Var1 = (_rawState[_t[0]] - (TempVector[d] + _rawD[Present, d] * _weight[BestWeight] + _bestD[Past, d] * (1f - _weight[BestWeight]))).Length();
-                    var Var2 = (_rawState[_t[1]] - (TempVector[d] + _rawD[Present, d] * _weight[BestWeight] + _bestD[Past, d] * (1f - _weight[BestWeight]))).Length();
+                //if (d == 1)
+                //{
+                //    var Var1 = (_rawState[_t[0]] - (TempVector[d] + _rawD[Present, d] * _weight[BestWeight] + _bestD[Past, d] * (1f - _weight[BestWeight]))).Length();
+                //    var Var2 = (_rawState[_t[1]] - (TempVector[d] + _rawD[Present, d] * _weight[BestWeight] + _bestD[Past, d] * (1f - _weight[BestWeight]))).Length();
                     //System.Console.WriteLine(Var1 + " " + Var2);
-                }
+                //}
 
                 //RawError[d, 0] = (_rawState[_t[0]] - TempVector[d]).Length();
 
@@ -514,8 +518,10 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                     //    Error *= -1f;
                     //}
                     //else
-                    if ((Error > 1f))
-                        Error = System.MathF.Pow(Error, POW);
+                    //if (d == 0)
+                    //    Error = System.MathF.Pow(Error, POW); //error^x for position
+                    if (Error > 0f)
+                        Error = Error * POW;
 
                     _dWeightError[d, w, _rawDDCat[Present, d]] = Error + 0.9999f * _dWeightError[d, w, _rawDDCat[Present, d]];
 
@@ -558,8 +564,8 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                         //    Error *= -1f;
                         //}
                         //else
-                        if (Error > 1f)
-                            Error = System.MathF.Pow(Error, POW);
+                        if (Error > 0f)
+                            Error = Error * POW;
 
                         //System.Console.WriteLine(Error);
 
@@ -706,7 +712,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
                     _dCategoryStateWeight[i, j] = _weights - 1;
                     _mCategoryStateWeight[i, j] = 0;
-                    
+
 
                     _dWeightError[j, 0, i] = 0;
                     _mWeightError[j, 0, i] = 0;
@@ -852,7 +858,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             //float PrevVelocityToIgnoreDupes = -1f;
             //if (PredictedSpeed > _ignoreDuplicateVelocity
             //    && _rawD[0, 0] == Position)
-            if (_rawState[0] == Position) //rawstate, not rawD!
+            if (_rawState[0] == Position)
                 return true;
             else
                 return false;
@@ -1045,11 +1051,9 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
         private void FilterInitLog()
         {
-            //string Path = System.DateTime.Now.Ticks.ToString() + ".csv";
             string Path = _saveFolder + @"\" + System.DateTime.Now.Ticks.ToString() + ".csv";
-            //string Path = System.DateTime.Now.ToString("yyyy/MM/dd") + ".csv";
-            //string Path = "file.csv";
             string dErrors = "," + "dError" + 0;
+
             for (int d = 1; d < _derivatives; d++)
                 dErrors += "," + "dError" + d;
 
@@ -1059,7 +1063,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
             while (!System.IO.File.Exists(_logPath))
                 System.Threading.Thread.Sleep(100);
-            //System.Threading.Thread.Sleep(10000);
 
             _startLog = true;
             return;
@@ -1155,7 +1158,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
         {
             float ReportWatchElapsed = (float)_reportWatch.Elapsed.TotalMilliseconds;
 
-            if (State is ITabletReport tabletReport && ReportWatchElapsed < 1.2f * (_reportDelta + 2f * _leftoverDeltaMax - _leftoverDeltaMin))
+            if (State is ITabletReport tabletReport && ReportWatchElapsed < 1.25f * (_reportDelta + 2f * _leftoverDeltaMax - _leftoverDeltaMin))
             {
                 if (_interpolation)
                 {
@@ -1201,7 +1204,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             {
                 _reportWatch.Stop();
                 _stateReset = true;
-                if (_weightAveraging && _ignoredDuplicate == false && _reportsAfterPenLift > 60 * _tabletHz) //just doing this rarely
+                if (_weightAveraging && _ignoredDuplicate == false && _reportsAfterPenLift > 10 * _tabletHz) //just doing this rarely
                     FilterNormaliseError();
 
                 if (_reportsAfterPenLift > 10 * _tabletHz && _writingSave == false)
@@ -1213,7 +1216,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
                 if (_ignoredDuplicate == false)
                 {
-                    //FilterNormaliseError();
                     System.Console.WriteLine("Calculation time: " + _statCalcTime / (1000f / Frequency) * (1 + _duplicate)
                                            + ". If higher than or close to 0.5, reduce weights or derivatives or duplicating value.\n"
                                            + "Try setting core affinity to last cores & priority high, too. It can have a massive effect.\n"
@@ -1222,19 +1224,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                                            + "error:" + _finalError[0] + "\n"
                                            + "stat error pred: " + _finalError[1]
                                            );
-
-                    if (false) //scratchpad
-                    {
-                        int[] _deviation = new int[32];
-                        string[] savesave = new string[_deviation.Length];
-
-                        foreach (int i in _deviation)
-                            savesave[i] = _deviation[i].ToString();
-
-                        string Path = "file.csv";
-                        string WriteNow = (long)_rawState[_t[0]].X + "," + (long)_rawState[_t[0]].Y + "," + (long)_evolvedState[_t[0]].X + "," + (long)_evolvedState[_t[0]].Y + "\n";
-                        System.IO.File.AppendAllText(Path, WriteNow);
-                    }
                 }
             }
         }
