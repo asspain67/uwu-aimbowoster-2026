@@ -47,6 +47,9 @@
  *    .12
  *    re-enable enhanced prec
  *    error pow changes (no more pow, multiply positive instead')
+ *    .13
+ *    pow revert to older ways
+ *    really re-enable enhanced prec
  */
 
 
@@ -59,7 +62,7 @@ using System.Numerics;
 
 namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLearning_6_10
 {
-    [PluginName("uwu aimbowoster 2026 6 test12")]
+    [PluginName("uwu aimbowoster 2026 6 test13")]
     public class Ee535 : AsyncPositionedPipelineElement<IDeviceReport>
     {
         public Ee535() : base()
@@ -163,17 +166,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             set { _errorPOW = value; }
         }
         private float _errorPOW;
-        //[Property("test noise adjustment 0 - 2"), DefaultPropertyValue(0), ToolTip
-        //(
-        //"0/Off (default), 1 or 2 may let filter ignore noise and may or may not be helpful\n" +
-        //"test\n"
-        //)]
-        //public int GetNoiseAdjustment
-        //{
-        //    get { return _noiseAdjustment; }
-        //    set { _noiseAdjustment = value; }
-        //}
-        private int _noiseAdjustment = 0;
 
         //[Property("test weight averaging/propagation"), DefaultPropertyValue(false), ToolTip
         //(
@@ -222,7 +214,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             get { return _enhancedPrec; }
             set { _enhancedPrec = value; }
         }
-        private bool _enhancedPrec = false;
+        private bool _enhancedPrec;
 
         //[Property("test training - custom training goal offset"), DefaultPropertyValue(1), ToolTip
         //(
@@ -295,7 +287,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
         private int _tSize = 4;
 
-        //private float _ignoreDuplicateVelocity = 50f;
         private bool _ignoreDuplicate;
         private bool _interpolation = true;
 
@@ -316,10 +307,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
         private float[,,] _dWeightError;
         private float[,,] _mWeightError;
         private float[,] _fWeightError;
-
-        //private double _stationaryError = 0;
-        //private Vector2 _stationaryPosition = Vector2.Zero;
-        //private uint _stationaryCount = 0;
 
         private uint _reportsAfterPenLift;
 
@@ -371,8 +358,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             if (TimeMulti < 0)
                 TimeMulti *= -1f;
 
-            //float[] DampeningWeight = new float[_derivatives];
-
 
             if (Time < 1f && Time > -1f)
                 for (int d = 1; d < _derivatives; d++)
@@ -401,29 +386,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             _finalError[0] = 0.0001d * ErrorDeviation + 0.9999d * _finalError[0];
 
 
-
-            //if (ReportDistance < 100) //only works if pen is really stationary, can't be known by the program in any easy way
-            //{
-            //    if (_stationaryCount == 1)
-            //        _stationaryPosition = _rawState[_t[0]];
-            //    else
-            //        _stationaryPosition = 0.002f * _rawState[_t[1]] + 0.998f * _stationaryPosition;
-            //
-            //    _stationaryCount++;
-            //
-            //    if (_stationaryCount > 1000)
-            //    {
-            //        _stationaryError = 0.001d * (double)(_stationaryPosition - _rawState[_t[0]]).Length() + 0.999d * _stationaryError; //raw - stationary deviation
-            //        _finalError[1] = 0.001d * (double)(_stationaryPosition - _evolvedState[_t[0]]).Length() + 0.999d * _finalError[1]; //prediction - stationary deviation
-            //    }
-            //}
-            //else
-            //    _stationaryCount = 1;
-
-            //if (_stationaryCount % 10000 == 0)
-            //    System.Console.WriteLine("Stationary Error: " + _stationaryError
-            //                        + "\nStationary Pred Error: " + _finalError[1]);
-
             float[,] RawError = new float[_derivatives, _weights];
             float[,] MagError = new float[_derivatives, _weights];
             float[] FuseError = new float[_weights];
@@ -442,16 +404,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
             for (int i = 0; i < _derivatives; i++)
                 Pow[i] = System.MathF.Pow(PredDistance, i);
 
-            //System.Console.WriteLine(_t[0] + " " + _t[1]);
-            //System.Console.WriteLine(_rawState[_t[0]].X + " " + _rawState[_t[1]].X);
-
-
-            //if ((_rawState[_t[1]] - _bestD[Present, 0]).Length() < (_rawState[Future] - _bestD[Present, 0]).Length())
-            //    Future = _t[1];
-
-            //if ((_rawState[_t[1]] - _bestD[Present, 0]).Length() < (_rawState[Future] - _bestD[Present, 0]).Length())
-            //    Future = _t[1];
-
             float BaseFError = (_rawState[Future] - _rawState[Present]).Length();
             int FCategory = _fusedDDCat[Present];
 
@@ -461,15 +413,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
                 float Error = FuseError[w];
 
-                //if (Error < 0f)
-                //{
-                //    Error *= -1f;
-                //    Error = System.MathF.Pow(Error, (1f / POW));
-                //    Error *= -1f;
-                //}
-                //else'
-                if (Error > 0)
-                    Error = Error * POW;
+                Error = ProcessError(Error);
 
                 _fWeightError[w, FCategory] = Error + 0.9999f * _fWeightError[w, FCategory];
 
@@ -487,15 +431,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                 BestError = System.Single.MaxValue;
                 int BestWeight = _dCategoryStateWeight[_rawDDCat[Present, d], d];
 
-                //if (d == 1)
-                //{
-                //    var Var1 = (_rawState[_t[0]] - (TempVector[d] + _rawD[Present, d] * _weight[BestWeight] + _bestD[Past, d] * (1f - _weight[BestWeight]))).Length();
-                //    var Var2 = (_rawState[_t[1]] - (TempVector[d] + _rawD[Present, d] * _weight[BestWeight] + _bestD[Past, d] * (1f - _weight[BestWeight]))).Length();
-                    //System.Console.WriteLine(Var1 + " " + Var2);
-                //}
-
-                //RawError[d, 0] = (_rawState[_t[0]] - TempVector[d]).Length();
-
                 for (int w = 0; w < _weights; w++)
                 {
                     RawError[d, w] = (_rawState[Future] - (TempVector[d] + System.MathF.Pow((float)_predGoal, (float)d) * (_rawD[Present, d] * _weight[w] + _bestD[Past, d] * (1f - _weight[w])))).Length();
@@ -511,17 +446,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                     else
                         Error = RawError[0, w];
 
-                    //if (Error < -1f)
-                    //{
-                    //    Error *= -1f;
-                    //    Error = System.MathF.Pow(Error, (1f / POW));
-                    //    Error *= -1f;
-                    //}
-                    //else
-                    //if (d == 0)
-                    //    Error = System.MathF.Pow(Error, POW); //error^x for position
-                    if (Error > 0f)
-                        Error = Error * POW;
+                    Error = ProcessError(Error);
 
                     _dWeightError[d, w, _rawDDCat[Present, d]] = Error + 0.9999f * _dWeightError[d, w, _rawDDCat[Present, d]];
 
@@ -531,9 +456,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                         _dCategoryStateWeight[_rawDDCat[Present, d], d] = w;
                     }
                 }
-
-                //Vector2 TempMVector = _rawD[Present, d] * _weight[BestWeight] + _bestD[Past, d] * (1f - _weight[BestWeight]);
-
 
                 // MAG ///////////////////////////////////////////
 
@@ -554,20 +476,7 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                         //if (d != 0)
                         Error = MagError[d, w]; // - RawError[d, BestWeight];
 
-                        //else
-                        //    Error = MagError[0, w];
-
-                        //if (Error < -1f)
-                        //{
-                        //    Error *= -1f;
-                        //    Error = System.MathF.Pow(Error, (1f / POW));
-                        //    Error *= -1f;
-                        //}
-                        //else
-                        if (Error > 0f)
-                            Error = Error * POW;
-
-                        //System.Console.WriteLine(Error);
+                        Error = ProcessError(Error);
 
                         _mWeightError[d, w, _rawDMCat[Present, d]] = Error + 0.9999f * _mWeightError[d, w, _rawDMCat[Present, d]];
 
@@ -757,15 +666,8 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
             _interpLeftOver = 0f;
 
-            _leftoverDeltaMax = 3f;
+            _leftoverDeltaMax = 3f; //they are kinda large to account for some fucked up tablets, but should adjust in 10 - 30 sec
             _leftoverDeltaMin = -2f;
-
-            //if (_leftoverDeltaMax > 0.9f / (1000f / _tabletHz))
-            //{
-            //    _leftoverDeltaMax = 0.9f / (1000f / _tabletHz);
-            //    _leftoverDeltaMin = -_leftoverDeltaMax;
-            //}
-
 
             //***
 
@@ -852,16 +754,31 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
 
         private bool FilterCheckDuplicate(Vector2 Position) //For pens that output an extra packet with duplicate position on button press or pressure, mostly.
         {
-            //Vector2 PredictedSpeedVector = Vector2.Zero;
-
-            //float PredictedSpeed = (_bestD[_t[0], 0] - _bestD[_t[1], 0]).Length();
-            //float PrevVelocityToIgnoreDupes = -1f;
-            //if (PredictedSpeed > _ignoreDuplicateVelocity
-            //    && _rawD[0, 0] == Position)
             if (_rawState[0] == Position)
                 return true;
             else
                 return false;
+        }
+
+        private float ProcessError(float Error)
+        {
+            //mode 1
+            //if (Error > 0)
+            //    Error *= _errorPOW;
+
+            //mode 2
+            if (Error > 1)
+                Error = System.MathF.Pow(Error, _errorPOW);
+            else if (Error < -1)
+            {
+                Error *= -1;
+                Error = System.MathF.Pow(Error, 1f / _errorPOW);
+                Error *= -1;
+            }
+            //else
+                //Error = Error - 0.25f;
+
+            return Error;
         }
 
         private void FilterStateReset(Vector2 Position) //After receiving new position after long time
@@ -1009,12 +926,6 @@ namespace QuantumDotNetIntangibleBlockchainDotComArtificialIntelligenceMachineLe
                 float DChange;
 
                 DChange = (_bestD[_t[1], d] - _rawD[_t[0], d]).Length();
-
-                if (_noiseAdjustment > 0 && d == 0)
-                    DChange = System.MathF.Min(DChange, (_bestD[_t[2], d] - _rawD[_t[0], d]).Length());
-
-                if (_noiseAdjustment > 1 && d == 0)
-                    DChange = System.MathF.Min(DChange, (_bestD[_t[3], d] - _rawD[_t[0], d]).Length());
 
 
                 _rawDDCat[_t[0], d] = FilterCategorise(DChange);
